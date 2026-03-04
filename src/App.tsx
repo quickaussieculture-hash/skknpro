@@ -94,7 +94,11 @@ export default function App() {
       setTitleAnalysis(result);
     } catch (err: any) {
       console.error('Title analysis failed', err);
-      setError(err.message || 'Phân tích tên đề tài thất bại. Vui lòng kiểm tra API Key.');
+      if (err.message?.includes('429') || err.status === 'RESOURCE_EXHAUSTED') {
+        setError('Hệ thống đang quá tải (Quota exceeded). Vui lòng đợi 1-2 phút hoặc sử dụng API Key trả phí để tiếp tục.');
+      } else {
+        setError(err.message || 'Phân tích tên đề tài thất bại. Vui lòng kiểm tra API Key.');
+      }
       if (err.message?.includes('API Key')) setShowApiKeyModal(true);
     } finally {
       setIsAnalyzingTitle(false);
@@ -168,7 +172,11 @@ export default function App() {
       setDeepReview(review);
     } catch (err: any) {
       console.error('File processing failed', err);
-      setError(err.message || 'Xử lý tài liệu thất bại. Vui lòng thử lại.');
+      if (err.message?.includes('429') || err.status === 'RESOURCE_EXHAUSTED') {
+        setError('Hệ thống đang quá tải (Quota exceeded). Vui lòng đợi 1-2 phút hoặc sử dụng API Key trả phí để tiếp tục.');
+      } else {
+        setError(err.message || 'Xử lý tài liệu thất bại. Vui lòng thử lại.');
+      }
       if (err.message?.includes('API Key')) setShowApiKeyModal(true);
     } finally {
       setIsProcessingFile(false);
@@ -184,7 +192,11 @@ export default function App() {
       setFixedContent(result);
     } catch (err: any) {
       console.error('Auto fix failed', err);
-      setError(err.message || 'Tự động sửa lỗi thất bại.');
+      if (err.message?.includes('429') || err.status === 'RESOURCE_EXHAUSTED') {
+        setError('Hệ thống đang quá tải (Quota exceeded). Vui lòng đợi 1-2 phút hoặc sử dụng API Key trả phí để tiếp tục.');
+      } else {
+        setError(err.message || 'Tự động sửa lỗi thất bại.');
+      }
       if (err.message?.includes('API Key')) setShowApiKeyModal(true);
     } finally {
       setIsAutoFixing(false);

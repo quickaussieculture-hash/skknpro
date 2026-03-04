@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 
 let customApiKey: string | null = null;
 
@@ -32,6 +32,20 @@ const getAI = () => {
   return new GoogleGenAI({ apiKey });
 };
 
+// Helper for retrying on 429 errors
+const withRetry = async <T>(fn: () => Promise<T>, retries = 3, delay = 2000): Promise<T> => {
+  try {
+    return await fn();
+  } catch (error: any) {
+    if (retries > 0 && (error.message?.includes('429') || error.status === 'RESOURCE_EXHAUSTED')) {
+      console.warn(`Rate limited. Retrying in ${delay}ms... (${retries} retries left)`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return withRetry(fn, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+};
+
 export interface TitleAnalysis {
   score: number;
   critique: string;
@@ -60,8 +74,9 @@ export interface DeepReview {
 
 export const analyzeTitle = async (title: string): Promise<TitleAnalysis> => {
   const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: "gemini-3.1-pro-preview",
+  
+  const response = await withRetry(() => ai.models.generateContent({
+    model: "gemini-3-flash-preview",
     contents: `Hãy phân tích tên đề tài Sáng kiến kinh nghiệm (SKKN) sau đây theo Thông tư 27/2020/TT-BGDĐT: "${title}"`,
     config: {
       responseMimeType: "application/json",
@@ -86,15 +101,16 @@ export const analyzeTitle = async (title: string): Promise<TitleAnalysis> => {
         required: ["score", "critique", "suggestions"]
       }
     }
-  });
+  }));
 
   return JSON.parse(response.text || "{}");
 };
 
 export const analyzeDocument = async (content: string, title: string): Promise<DeepReview> => {
   const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: "gemini-3.1-pro-preview",
+  
+  const response = await withRetry(() => ai.models.generateContent({
+    model: "gemini-3-flash-preview",
     contents: `Bạn là bộ não AI cao cấp của "SKKN Checker Pro". Hãy thẩm định toàn bộ nội dung Sáng kiến kinh nghiệm (SKKN) sau đây.
     
     Tên đề tài: ${title}
@@ -170,15 +186,16 @@ export const analyzeDocument = async (content: string, title: string): Promise<D
         required: ["scores", "plagiarism", "aiRisk", "summary", "deepReview", "improvementSuggestions", "plagiarismSources", "references"]
       }
     }
-  });
+  }));
 
   return JSON.parse(response.text || "{}");
 };
 
 export const autoFixContent = async (content: string): Promise<string> => {
   const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: "gemini-3.1-pro-preview",
+  
+  const response = await withRetry(() => ai.models.generateContent({
+    model: "gemini-3-flash-preview",
     contents: `Hãy thực hiện "AUTO FIX" cho đoạn văn bản SKKN sau đây:
     1. Giảm AI: Chỉnh sửa văn phong cá nhân hóa, thêm cảm xúc để mức AI <15%.
     2. Nâng cấp từ vựng: Dùng thuật ngữ giáo dục chuyên ngành.
@@ -188,7 +205,7 @@ export const autoFixContent = async (content: string): Promise<string> => {
     config: {
       systemInstruction: "Bạn là chuyên gia biên tập SKKN cao cấp. Hãy trả về văn bản đã được chỉnh sửa hoàn chỉnh, giữ nguyên cấu trúc nhưng nâng cấp chất lượng ngôn từ."
     }
-  });
+  }));
 
   return response.text || content;
 };
