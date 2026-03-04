@@ -61,6 +61,7 @@ export default function App() {
   
   const [isAutoFixing, setIsAutoFixing] = useState(false);
   const [fixedContent, setFixedContent] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [tempApiKey, setTempApiKey] = useState('');
@@ -79,12 +80,22 @@ export default function App() {
 
   const handleTitleAnalysis = async () => {
     if (!title.trim()) return;
+    
+    if (!savedApiKey && !process.env.GEMINI_API_KEY) {
+      setError('Vui lòng nhập Gemini API Key trong phần Cài đặt để sử dụng tính năng này.');
+      setShowApiKeyModal(true);
+      return;
+    }
+
     setIsAnalyzingTitle(true);
+    setError(null);
     try {
       const result = await analyzeTitle(title);
       setTitleAnalysis(result);
-    } catch (error) {
-      console.error('Title analysis failed', error);
+    } catch (err: any) {
+      console.error('Title analysis failed', err);
+      setError(err.message || 'Phân tích tên đề tài thất bại. Vui lòng kiểm tra API Key.');
+      if (err.message?.includes('API Key')) setShowApiKeyModal(true);
     } finally {
       setIsAnalyzingTitle(false);
     }
@@ -99,22 +110,33 @@ export default function App() {
   const extractTextFromFile = async (file: File): Promise<string> => {
     const extension = file.name.split('.').pop()?.toLowerCase();
     
-    if (extension === 'pdf') {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      let fullText = '';
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        fullText += textContent.items.map((item: any) => item.str).join(' ') + '\n';
+    try {
+      if (extension === 'pdf') {
+        const arrayBuffer = await file.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          fullText += textContent.items.map((item: any) => (item as any).str).join(' ') + '\n';
+        }
+        return fullText;
+      } else if (extension === 'docx') {
+        const arrayBuffer = await file.arrayBuffer();
+        // Handle potential default export issues with mammoth in Vite/ESM
+        const mammothLib = (mammoth as any).extractRawText ? mammoth : (mammoth as any).default;
+        if (!mammothLib || !mammothLib.extractRawText) {
+          throw new Error('Thư viện Mammoth không khả dụng.');
+        }
+        const result = await mammothLib.extractRawText({ arrayBuffer });
+        return result.value;
+      } else {
+        return await file.text();
       }
-      return fullText;
-    } else if (extension === 'docx') {
-      const arrayBuffer = await file.arrayBuffer();
-      const result = await mammoth.extractRawText({ arrayBuffer });
-      return result.value;
-    } else {
-      return await file.text();
+    } catch (error: any) {
+      console.error('Error extracting text:', error);
+      throw new Error(`Lỗi khi đọc tệp ${file.name}: ${error.message || 'Định dạng không hỗ trợ'}`);
     }
   };
 
@@ -122,8 +144,21 @@ export default function App() {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
     
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      setError('Tệp quá lớn. Vui lòng chọn tệp nhỏ hơn 10MB.');
+      return;
+    }
+
     setFile(selectedFile);
+    
+    if (!savedApiKey && !process.env.GEMINI_API_KEY) {
+      setError('Vui lòng nhập Gemini API Key trong phần Cài đặt để sử dụng tính năng này.');
+      setShowApiKeyModal(true);
+      return;
+    }
+
     setIsProcessingFile(true);
+    setError(null);
     setProcessingStep('Đang đọc và trích xuất nội dung tài liệu...');
     try {
       const text = await extractTextFromFile(selectedFile);
@@ -131,8 +166,10 @@ export default function App() {
       setProcessingStep('Đang thẩm định nội dung theo Thông tư 27...');
       const review = await analyzeDocument(text, title || selectedFile.name);
       setDeepReview(review);
-    } catch (error) {
-      console.error('File processing failed', error);
+    } catch (err: any) {
+      console.error('File processing failed', err);
+      setError(err.message || 'Xử lý tài liệu thất bại. Vui lòng thử lại.');
+      if (err.message?.includes('API Key')) setShowApiKeyModal(true);
     } finally {
       setIsProcessingFile(false);
     }
@@ -141,11 +178,14 @@ export default function App() {
   const handleAutoFix = async () => {
     if (!fileContent) return;
     setIsAutoFixing(true);
+    setError(null);
     try {
       const result = await autoFixContent(fileContent);
       setFixedContent(result);
-    } catch (error) {
-      console.error('Auto fix failed', error);
+    } catch (err: any) {
+      console.error('Auto fix failed', err);
+      setError(err.message || 'Tự động sửa lỗi thất bại.');
+      if (err.message?.includes('API Key')) setShowApiKeyModal(true);
     } finally {
       setIsAutoFixing(false);
     }
@@ -200,6 +240,31 @@ export default function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-16 space-y-16">
+        {/* Error Message */}
+        <AnimatePresence>
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="bg-red-500/10 border border-red-500/20 p-6 rounded-3xl flex items-center gap-4"
+            >
+              <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-6 h-6 text-red-400" />
+              </div>
+              <div className="flex-1">
+                <p className="text-red-400 font-bold">{error}</p>
+              </div>
+              <button 
+                onClick={() => setError(null)}
+                className="text-red-400/50 hover:text-red-400 transition-colors"
+              >
+                <RefreshCcw className="w-5 h-5" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Section 1: Title Analysis */}
         <section className="space-y-8">
           <div className="flex items-center gap-4">

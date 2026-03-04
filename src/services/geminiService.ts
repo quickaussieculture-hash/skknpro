@@ -7,12 +7,27 @@ export const setApiKey = (key: string) => {
 };
 
 const getAI = () => {
-  // Use custom key if provided, otherwise fallback to environment variable
-  // Vite's 'define' will replace process.env.GEMINI_API_KEY with a string value
-  const apiKey = customApiKey || (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : '');
+  let apiKey = customApiKey || '';
   
   if (!apiKey) {
-    throw new Error("API Key is missing. Please provide a Gemini API Key.");
+    try {
+      // Vite's 'define' will replace this literal string
+      apiKey = process.env.GEMINI_API_KEY || '';
+    } catch (e) {
+      // Ignore
+    }
+  }
+  
+  if (!apiKey) {
+    try {
+      apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || '';
+    } catch (e) {
+      // Ignore
+    }
+  }
+  
+  if (!apiKey) {
+    throw new Error("API Key is missing. Please provide a Gemini API Key in Settings.");
   }
   return new GoogleGenAI({ apiKey });
 };
