@@ -7,7 +7,10 @@ export const setApiKey = (key: string) => {
 };
 
 const getAI = () => {
-  const apiKey = customApiKey || process.env.GEMINI_API_KEY;
+  // Use custom key if provided, otherwise fallback to environment variable
+  // Vite's 'define' will replace process.env.GEMINI_API_KEY with a string value
+  const apiKey = customApiKey || (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : '');
+  
   if (!apiKey) {
     throw new Error("API Key is missing. Please provide a Gemini API Key.");
   }

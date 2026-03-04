@@ -41,7 +41,8 @@ import { twMerge } from 'tailwind-merge';
 import { analyzeTitle, analyzeDocument, autoFixContent, setApiKey, type TitleAnalysis, type DeepReview } from './services/geminiService';
 
 // PDF.js worker setup
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+const PDF_JS_VERSION = '5.5.207'; // Match package.json
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${(pdfjsLib as any).version || PDF_JS_VERSION}/pdf.worker.min.js`;
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
