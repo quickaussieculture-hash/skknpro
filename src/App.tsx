@@ -17,7 +17,9 @@ import {
   Wand2,
   Settings,
   User,
-  MessageSquare
+  MessageSquare,
+  Lock,
+  Key
 } from 'lucide-react';
 import { 
   Radar, 
@@ -49,6 +51,13 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return localStorage.getItem('isLoggedIn') === 'true';
+  });
+  const [loginUser, setLoginUser] = useState('');
+  const [loginPass, setLoginPass] = useState('');
+  const [loginError, setLoginError] = useState('');
+
   const [title, setTitle] = useState('');
   const [titleAnalysis, setTitleAnalysis] = useState<TitleAnalysis | null>(null);
   const [isAnalyzingTitle, setIsAnalyzingTitle] = useState(false);
@@ -76,6 +85,24 @@ export default function App() {
     setSavedApiKey(tempApiKey);
     setApiKey(tempApiKey);
     setShowApiKeyModal(false);
+  };
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const validUsers = [
+      { user: 'admin', pass: '25251325' },
+      { user: 'Test', pass: '123456@' }
+    ];
+
+    const isValid = validUsers.some(u => u.user === loginUser && u.pass === loginPass);
+
+    if (isValid) {
+      setIsLoggedIn(true);
+      localStorage.setItem('isLoggedIn', 'true');
+      setLoginError('');
+    } else {
+      setLoginError('Tên đăng nhập hoặc mật khẩu không chính xác.');
+    }
   };
 
   const formatErrorMessage = (err: any): string => {
@@ -227,6 +254,87 @@ export default function App() {
     { subject: 'Hình thức', A: deepReview.scores.form, fullMark: 10 },
   ] : [];
 
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen tech-grid flex items-center justify-center p-6 bg-slate-50">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md glass-card p-10 space-y-8"
+        >
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="w-16 h-16 bg-indigo-600 flex items-center justify-center rounded-2xl shadow-xl shadow-indigo-500/20">
+              <ShieldCheck className="text-white w-10 h-10" />
+            </div>
+            <div>
+              <h1 className="font-black text-3xl text-slate-900 tracking-tight glow-text">SKKN checker <span className="text-indigo-600">Pro</span></h1>
+              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em]">HỆ THỐNG THẨM ĐỊNH THÔNG MINH</p>
+            </div>
+          </div>
+
+          <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl">
+            <p className="text-xs text-indigo-700 leading-relaxed font-medium text-center">
+              Xin lỗi quý thầy cô, do phải duy trì và nâng cấp hệ thống nên em xin phép thu ít phí (chỉ bằng vài ly cà phê - sử dụng vĩnh viễn), xin cảm ơn và mong quý thầy cô thông cảm: Liên hệ zalo: <a href="https://zalo.me/0383752789" target="_blank" rel="noopener noreferrer" className="text-indigo-600 font-black underline underline-offset-2 hover:text-indigo-800 transition-colors">0383752789</a>
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tên đăng nhập</label>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input 
+                  type="text"
+                  value={loginUser}
+                  onChange={(e) => setLoginUser(e.target.value)}
+                  placeholder="admin"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 pl-12 pr-5 text-slate-700 focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mật khẩu</label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input 
+                  type="password"
+                  value={loginPass}
+                  onChange={(e) => setLoginPass(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 pl-12 pr-5 text-slate-700 focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none"
+                />
+              </div>
+            </div>
+
+            {loginError && (
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-xs text-red-500 font-bold text-center"
+              >
+                {loginError}
+              </motion.p>
+            )}
+
+            <button 
+              type="submit"
+              className="w-full bg-indigo-600 text-white py-4 rounded-xl font-black text-sm shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all active:scale-95"
+            >
+              ĐĂNG NHẬP HỆ THỐNG
+            </button>
+          </form>
+
+          <div className="pt-4 border-t border-slate-100 text-center">
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
+              © 2026 SKKN Checker Pro • Designed for Educators
+            </p>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen tech-grid">
       {/* Header */}
@@ -254,6 +362,16 @@ export default function App() {
               <Zap className="w-3.5 h-3.5 text-indigo-600" />
               Get API
             </a>
+            <button 
+              onClick={() => {
+                localStorage.removeItem('isLoggedIn');
+                setIsLoggedIn(false);
+              }}
+              className="bg-slate-100 text-slate-600 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-red-50 hover:text-red-600 transition-all border border-slate-200"
+              title="Đăng xuất"
+            >
+              <Lock className="w-3.5 h-3.5" />
+            </button>
             <button 
               onClick={() => {
                 setTempApiKey(savedApiKey);
