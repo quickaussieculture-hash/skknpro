@@ -240,8 +240,8 @@ export default function App() {
               <ShieldCheck className="text-white w-7 h-7" />
             </motion.div>
             <div>
-              <h1 className="font-black text-2xl text-slate-900 tracking-tight glow-text">SKKN checker <span className="text-indigo-600">Pro</span></h1>
-              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em]">TẠO VÀ PHÁT TRIỂN BỞI THẦY KSOR GÉ</p>
+              <h1 className="font-black text-2xl text-slate-900 tracking-tight glow-text">Check SKKN</h1>
+              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em]">Phát triển bởi thầy Ksor Gé</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -639,10 +639,10 @@ export default function App() {
               <div className="w-14 h-14 bg-indigo-600 flex items-center justify-center rounded-2xl shadow-2xl shadow-indigo-500/20">
                 <ShieldCheck className="text-white w-8 h-8" />
               </div>
-              <h2 className="font-black text-3xl text-slate-900 tracking-tight glow-text">SKKN Checker Pro</h2>
+              <h2 className="font-black text-3xl text-slate-900 tracking-tight glow-text">Check SKKN</h2>
             </div>
             <p className="text-slate-500 leading-relaxed max-w-sm font-medium">
-              Giải pháp AI hàng đầu hỗ trợ giáo viên thẩm định và hoàn thiện Sáng kiến kinh nghiệm theo tiêu chuẩn Bộ Giáo dục.
+              Phát triển bởi thầy Ksor Gé. Giải pháp AI hàng đầu hỗ trợ giáo viên thẩm định và hoàn thiện Sáng kiến kinh nghiệm theo tiêu chuẩn Bộ Giáo dục.
             </p>
           </div>
 
@@ -679,7 +679,7 @@ export default function App() {
           </div>
         </div>
         <div className="max-w-7xl mx-auto px-6 mt-24 pt-10 border-t border-slate-200 text-center">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.6em]">© 2026 SKKN Checker Pro • Designed for Educators</p>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.6em]">© 2026 Check SKKN • Phát triển bởi thầy Ksor Gé</p>
         </div>
       </footer>
 
