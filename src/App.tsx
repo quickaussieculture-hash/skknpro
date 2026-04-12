@@ -41,8 +41,8 @@ import { twMerge } from 'tailwind-merge';
 import { analyzeTitle, analyzeDocument, autoFixContent, setApiKey, type TitleAnalysis, type DeepReview } from './services/geminiService';
 
 // PDF.js worker setup
-const PDF_JS_VERSION = '5.5.207'; // Match package.json
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${(pdfjsLib as any).version || PDF_JS_VERSION}/pdf.worker.min.js`;
+const PDF_JS_VERSION = '5.5.207';
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDF_JS_VERSION}/pdf.worker.min.js`;
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -142,14 +142,33 @@ export default function App() {
     try {
       if (extension === 'pdf') {
         const arrayBuffer = await file.arrayBuffer();
-        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const loadingTask = pdfjsLib.getDocument({ 
+          data: arrayBuffer,
+          useWorkerFetch: true,
+          isEvalSupported: false,
+        });
+        
         const pdf = await loadingTask.promise;
         let fullText = '';
+        
         for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          fullText += textContent.items.map((item: any) => (item as any).str).join(' ') + '\n';
+          try {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items
+              .map((item: any) => item.str || '')
+              .join(' ');
+            fullText += pageText + '\n';
+          } catch (pageError) {
+            console.warn(`Error reading page ${i}:`, pageError);
+            continue;
+          }
         }
+        
+        if (!fullText.trim()) {
+          throw new Error('Không thể trích xuất văn bản từ tệp PDF này. Tệp có thể là dạng ảnh quét (OCR) hoặc được bảo vệ.');
+        }
+        
         return fullText;
       } else if (extension === 'docx') {
         const arrayBuffer = await file.arrayBuffer();
@@ -385,7 +404,9 @@ export default function App() {
                   <FileText className="w-12 h-12" />
                 </motion.div>
                 <div className="space-y-4">
-                  <h3 className="text-3xl font-black text-slate-900 tracking-tight">Kéo thả file vào đây</h3>
+                  <h3 className="text-3xl font-black text-slate-900 tracking-tight">
+                    {file ? file.name : "Kéo thả file vào đây"}
+                  </h3>
                   <p className="text-slate-500 text-sm leading-relaxed font-medium">
                     Hỗ trợ định dạng .pdf, .docx, .txt. Hệ thống sẽ tự động quét nội dung và thẩm định theo Thông tư 27.
                   </p>
